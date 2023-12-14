@@ -1,15 +1,37 @@
-class BB__ inherits A {};
+class A {
+    x : Bool;
 
-class Int {};
+    f(x : Int, y : Int) : Int { 0 };
 
-class C inherits Int {};
+    f() : Int { 0 };
 
-class SELF_TYPE {};
+    g(c : C) : C { c };
+};
 
-class D inherits SELF_TYPE {};
+class B inherits A {
+    y : Int;
 
-class D {};
+    self(self : Int) : Int { 0 };
 
-class E inherits F {};
-class F inherits G {};
-class G inherits E {};
+    h(x : Int, x : Int) : Int { 0 };
+
+    i(x : SELF_TYPE) : Int { 0 };
+
+    j(x : Z) : Int { 0 };
+};
+
+class C inherits A {
+    f(u : Int, v : Int) : Int { 0 };
+};
+
+class D inherits A {
+    f(u : Int) : Int { 0 };
+};
+
+class E inherits A {
+    f(u : Int, v : Bool) : Int { 0 };
+};
+
+class F inherits A {
+    f(u : Int, v : Int) : Bool { false };
+};

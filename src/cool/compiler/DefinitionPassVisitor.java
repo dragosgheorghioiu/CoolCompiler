@@ -10,6 +10,7 @@ import java.util.Objects;
 
 public class DefinitionPassVisitor implements ASTVisitor<Void> {
     Scope currentScope = SymbolTable.globals;
+    String currentClass = null;
 
     public Void visit (Program prog) {
         for (var classs : prog.classes) {
@@ -51,6 +52,11 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
             symbol.getType().setParentClass(classDef.parent.token.getText());
         }
 
+        currentClass = id.token.getText();
+        for (var feature : classDef.features) {
+            feature.accept(this);
+        }
+        currentClass = null;
 
         currentScope = currentScope.getParent();
 
@@ -63,16 +69,42 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(Attribute attribute) {
+        var id = attribute.name;
+        var symbol = new IdSymbol(id.token.getText());
+
+        symbol.setType(new ClassSymbol(currentScope, attribute.type.token.getText()));
+        if (!currentScope.add(symbol)) {
+            SymbolTable.error(id.ctx, id.token, "Class " + currentClass + " redefines attribute " + id.token.getText());
+            return null;
+        }
+        if (id.token.getText().equals("self")) {
+            SymbolTable.error(id.ctx, id.token, "Class " + currentClass + " has attribute with illegal name self");
+            return null;
+        }
+
+        attribute.name.setScope(currentScope);
+        attribute.name.setSymbol(symbol);
         return null;
     }
 
     @Override
     public Void visit(ClassMethod method) {
+        var id = method.name;
+        var symbol = new IdSymbol(id.token.getText());
+        symbol.setType(new ClassSymbol(currentScope, method.returnType.token.getText()));
+
+        currentScope = symbol.getType();
+        for (var formal : method.formals) {
+            formal.accept(this);
+        }
+        currentScope = currentScope.getParent();
         return null;
     }
 
     @Override
-    public Void visit(Formal formal) {
+    public Void visit(Formal formal)
+    {
+//        System.out.println("Formal");
         return null;
     }
 

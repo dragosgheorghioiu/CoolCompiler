@@ -44,11 +44,39 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
             copy = (IdSymbol) copy.getType().getParent().lookup(copy.getType().getParentClass());
         }
 
+        for (var feature : classDef.features) {
+            feature.accept(this);
+        }
+
         return symbol.getType();
     }
 
     @Override
     public ClassSymbol visit(Attribute attribute) {
+        var id = attribute.name;
+        var symbol = (IdSymbol) id.getSymbol();
+        var classSymbol = (ClassSymbol) id.getScope();
+        var globalScope = SymbolTable.globals;
+
+        if (symbol == null) {
+            return null;
+        }
+
+        var classSymbolParent = classSymbol;
+        while (classSymbolParent.getParentClass() != null) {
+            var parent = (IdSymbol) classSymbolParent.getParent().lookup(classSymbolParent.getParentClass());
+            if (parent.getType().getFeatures().containsKey(id.token.getText())) {
+                SymbolTable.error(attribute.ctx, id.token, "Class " + classSymbol.getName() + " redefines inherited attribute " + id.token.getText());
+                return null;
+            }
+            classSymbolParent = parent.getType();
+        }
+
+        if (globalScope.lookup(attribute.type.token.getText()) == null) {
+            SymbolTable.error(attribute.ctx, attribute.type.token, "Class " + classSymbol.getName() + " has attribute " + id.token.getText() + " with undefined type " + attribute.type.token.getText());
+            return null;
+        }
+
         return null;
     }
 
