@@ -77,6 +77,23 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
             return null;
         }
 
+        if (attribute.value != null) {
+            var valueType = attribute.value.accept(this);
+            if (valueType == null) {
+                return null;
+            }
+            if (!Objects.equals(((IdSymbol) id.getSymbol()).getType().getName(), valueType.getName())) {
+                SymbolTable.error(attribute.ctx, attribute.type.token,
+                        "Type "
+                        + valueType.getName()
+                        + " of initialization expression of attribute "
+                        + id.token.getText()
+                        + " is incompatible with declared type "
+                        + ((IdSymbol) id.getSymbol()).getType().getName());
+                return null;
+            }
+        }
+
         return null;
     }
 
@@ -102,17 +119,17 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(IntType intt) {
-        return null;
+        return ClassSymbol.INT;
     }
 
     @Override
     public ClassSymbol visit(StringType str) {
-        return null;
+        return ClassSymbol.STRING;
     }
 
     @Override
     public ClassSymbol visit(BoolType bool) {
-        return null;
+        return ClassSymbol.BOOL;
     }
 
     @Override

@@ -52,4 +52,10 @@ public class ClassSymbol extends IdSymbol implements Scope{
     public Map<String, FeatureSymbol> getFeatures() {
         return symbols;
     }
+
+    public static final ClassSymbol INT = new ClassSymbol(null, "Int");
+    public static final ClassSymbol STRING = new ClassSymbol(null, "String");
+    public static final ClassSymbol BOOL = new ClassSymbol(null, "Bool");
+    public static final ClassSymbol IO = new ClassSymbol(null, "IO");
+    public static final ClassSymbol OBJECT = new ClassSymbol(null, "Object");
 }
