@@ -3,9 +3,9 @@ package cool.structures;
 public class IOBasicClass extends ObjectBasicClass{
     public IOBasicClass(Scope globalScope) {
         super(globalScope, "IO");
-        type.symbols.put("out_string", new FeatureSymbol("out_string"));
-        type.symbols.put("out_int", new FeatureSymbol("out_int"));
-        type.symbols.put("in_string", new FeatureSymbol("in_string"));
-        type.symbols.put("in_int", new FeatureSymbol("in_int"));
+        type.methodSymbols.put("out_string", new MethodSymbol(globalScope, "out_string"));
+        type.methodSymbols.put("out_int", new MethodSymbol(globalScope, "out_int"));
+        type.methodSymbols.put("in_string", new MethodSymbol(globalScope, "in_string"));
+        type.methodSymbols.put("in_int", new MethodSymbol(globalScope, "in_int"));
     }
 }

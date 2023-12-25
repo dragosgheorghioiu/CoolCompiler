@@ -92,7 +92,7 @@ public class ASTConstructionVisitor extends CoolParserBaseVisitor<ASTNode> {
     }
     @Override
     public ASTNode visitRelational(CoolParser.RelationalContext ctx) {
-        return new RelationalComp(ctx.start, (Expression)visit(ctx.left), (Expression)visit(ctx.right), ctx.op.getText(), ctx);
+        return new RelationalComp(ctx.start, (Expression)visit(ctx.left), (Expression)visit(ctx.right), new Id(ctx.op, ctx), ctx);
     }
     @Override
     public ASTNode visitAssign(CoolParser.AssignContext ctx) {

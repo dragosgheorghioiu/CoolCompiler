@@ -79,6 +79,9 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
             return null;
         }
 
+        if (attribute.value != null)
+            attribute.value.accept(this);
+
         id.setScope(currentScope);
         id.setSymbol(symbol);
         return null;
@@ -127,15 +130,7 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(Id id) {
-        var symbol = (IdSymbol) currentScope.lookup(id.token.getText());
-
-        if (symbol == null) {
-            SymbolTable.error(id.ctx, id.token, "Undeclared identifier " + id);
-        }
-
         id.setScope(currentScope);
-        id.setSymbol(symbol);
-
         return null;
     }
 
@@ -161,36 +156,50 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(Paren paren) {
+        paren.expr.accept(this);
         return null;
     }
 
     @Override
     public Void visit(UnaryMinus uMinus) {
+        uMinus.expr.accept(this);
         return null;
     }
 
     @Override
     public Void visit(PlusMinus plusMinus) {
+        plusMinus.left.accept(this);
+        plusMinus.right.accept(this);
         return null;
     }
 
     @Override
     public Void visit(MultDiv multDiv) {
+        multDiv.left.accept(this);
+        multDiv.right.accept(this);
         return null;
     }
 
     @Override
     public Void visit(RelationalComp rel) {
+        rel.left.accept(this);
+        rel.right.accept(this);
         return null;
     }
 
     @Override
     public Void visit(Not not) {
+        not.expr.accept(this);
         return null;
     }
 
     @Override
     public Void visit(Assign assign) {
+        if (assign.name.token.getText().equals("self")) {
+            SymbolTable.error(assign.ctx, assign.name.token, "Cannot assign to self");
+        }
+        assign.name.accept(this);
+        assign.value.accept(this);
         return null;
     }
 
@@ -229,11 +238,13 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
         for (var localVar : let.local_vars) {
             var localVarSymbol = new IdSymbol(localVar.name.token.getText());
             localVarSymbol.setType(new ClassSymbol(currentScope, localVar.type.token.getText()));
-            currentScope = localVarSymbol.getType();
+            currentScope = new MethodSymbol(currentScope, "let-" + localVar.name.token.getText());
             if (localVar.name.token.getText().equals("self")) {
                 SymbolTable.error(localVar.name.ctx, localVar.name.token, "Let variable has illegal name self");
-                return null;
             }
+            if (localVar.value != null)
+                localVar.value.accept(this);
+            currentScope.add(localVarSymbol);
             localVar.name.setScope(currentScope);
             localVar.name.setSymbol(localVarSymbol);
         }

@@ -57,10 +57,15 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         var symbol = (IdSymbol) id.getSymbol();
         var classSymbol = (ClassSymbol) id.getScope();
         var globalScope = SymbolTable.globals;
-
+        IdSymbol realType = (IdSymbol) globalScope.lookup(attribute.type.token.getText());
         if (symbol == null) {
             return null;
         }
+        if (realType == null) {
+            SymbolTable.error(attribute.ctx, attribute.type.token, "Class " + classSymbol.getName() + " has attribute " + id.token.getText() + " with undefined type " + attribute.type.token.getText());
+            return null;
+        }
+        symbol.setType(realType.getType());
 
         var classSymbolParent = classSymbol;
         while (classSymbolParent.getParentClass() != null) {
@@ -94,7 +99,7 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
             }
         }
 
-        return null;
+        return symbol.getType();
     }
 
     @Override
@@ -182,7 +187,24 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
     @Override
     public ClassSymbol visit(Id id) {
         var currentScope = id.getScope();
+        if (id.token.getText().equals("self")) {
+            while (currentScope != null) {
+                if (currentScope instanceof ClassSymbol) {
+                    break;
+                }
+                currentScope = currentScope.getParent();
+            }
+            return ((ClassSymbol) currentScope);
+        }
+
+        if (currentScope.toString().equals("let-" + id.token.getText())) {
+            currentScope = currentScope.getParent();
+        }
         var symbol = (IdSymbol) currentScope.lookup(id.token.getText());
+        if (symbol == null) {
+            SymbolTable.error(id.ctx, id.token, "Undefined identifier " + id.token.getText());
+            return null;
+        }
 
         return symbol.getType();
     }
@@ -212,37 +234,109 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(Paren paren) {
-        return null;
+        return paren.expr.accept(this);
     }
 
     @Override
     public ClassSymbol visit(UnaryMinus uMinus) {
-        return null;
+        var intBasicClass = (IntBasicClass) SymbolTable.globals.lookup("Int");
+        var expr = uMinus.expr.accept(this);
+        if (!Objects.equals(expr.getName(), "Int")) {
+            SymbolTable.error(uMinus.ctx, uMinus.expr.token, "Operand of ~ has type " + expr.getName() + " instead of Int");
+            return intBasicClass.getType();
+        }
+        return intBasicClass.getType();
     }
 
     @Override
     public ClassSymbol visit(PlusMinus plusMinus) {
-        return null;
+        var intBasicClass = (IntBasicClass) SymbolTable.globals.lookup("Int");
+        var leftType = plusMinus.left.accept(this);
+        var rightType = plusMinus.right.accept(this);
+        if (leftType != null && !Objects.equals(leftType.getName(), "Int")) {
+            SymbolTable.error(plusMinus.ctx, plusMinus.left.token, "Operand of " + plusMinus.op + " has type " + leftType.getName() + " instead of Int");
+            return intBasicClass.getType();
+        }
+        if (rightType != null && !Objects.equals(rightType.getName(), "Int")) {
+            SymbolTable.error(plusMinus.ctx, plusMinus.right.token, "Operand of " + plusMinus.op + " has type " + rightType.getName() + " instead of Int");
+            return intBasicClass.getType();
+        }
+        return intBasicClass.getType();
     }
 
     @Override
     public ClassSymbol visit(MultDiv multDiv) {
-        return null;
+        var intBasicClass = (IntBasicClass) SymbolTable.globals.lookup("Int");
+        var leftType = multDiv.left.accept(this);
+        var rightType = multDiv.right.accept(this);
+        if (leftType != null && !Objects.equals(leftType.getName(), "Int")) {
+            SymbolTable.error(multDiv.ctx, multDiv.left.token, "Operand of " + multDiv.op + " has type " + leftType.getName() + " instead of Int");
+            return intBasicClass.getType();
+        }
+        if (rightType != null && !Objects.equals(rightType.getName(), "Int")) {
+            SymbolTable.error(multDiv.ctx, multDiv.right.token, "Operand of " + multDiv.op + " has type " + rightType.getName() + " instead of Int");
+            return intBasicClass.getType();
+        }
+        return intBasicClass.getType();
     }
 
     @Override
     public ClassSymbol visit(RelationalComp rel) {
-        return null;
+        var boolBasicClass = (BoolBasicClass) SymbolTable.globals.lookup("Bool");
+        var leftType = rel.left.accept(this);
+        var rightType = rel.right.accept(this);
+        if (Objects.equals(rel.op.token.getText(), "=")) {
+            var validLeftClass = List.of("Int", "String", "Bool");
+            if (leftType != null && rightType != null && validLeftClass.contains(leftType.getName()) && !Objects.equals(leftType.getName(), rightType.getName())) {
+                SymbolTable.error(rel.ctx, rel.op.token, "Cannot compare " + leftType.getName() + " with " + rightType.getName());
+                return boolBasicClass.getType();
+            }
+            return boolBasicClass.getType();
+        }
+        if (leftType != null && !Objects.equals(leftType.getName(), "Int")) {
+            SymbolTable.error(rel.ctx, rel.left.token, "Operand of " + rel.op.token.getText() + " has type " + leftType.getName() + " instead of Int");
+            return boolBasicClass.getType();
+        }
+        if (rightType != null && !Objects.equals(rightType.getName(), "Int")) {
+            SymbolTable.error(rel.ctx, rel.right.token, "Operand of " + rel.op.token.getText() + " has type " + rightType.getName() + " instead of Int");
+            return boolBasicClass.getType();
+        }
+        return boolBasicClass.getType();
     }
 
     @Override
     public ClassSymbol visit(Not not) {
-        return null;
+        var boolBasicClass = (BoolBasicClass) SymbolTable.globals.lookup("Bool");
+        var expr = not.expr.accept(this);
+        if (expr != null && !Objects.equals(expr.getName(), "Bool")) {
+            SymbolTable.error(not.ctx, not.expr.token, "Operand of not has type " + expr.getName() + " instead of Bool");
+        }
+        return boolBasicClass.getType();
     }
 
     @Override
     public ClassSymbol visit(Assign assign) {
-        return null;
+        var objectBasicClass = (ObjectBasicClass) SymbolTable.globals.lookup("Object");
+        var declaredType = assign.name.accept(this);
+        var valueType = assign.value.accept(this);
+        var parentValueType = valueType.getParentClassSymbol();
+
+        if (Objects.equals(declaredType.getName(), valueType.getName())) {
+            return objectBasicClass.getType();
+        }
+
+        while (parentValueType != null) {
+            if (Objects.equals(parentValueType.getName(), declaredType.getName())) {
+                return objectBasicClass.getType();
+            }
+            parentValueType = parentValueType.getParentClassSymbol();
+        }
+
+        if (parentValueType == null) {
+            SymbolTable.error(assign.ctx, assign.value.token, "Type " + valueType.getName() + " of assigned expression is incompatible with declared type " + declaredType.getName() + " of identifier " + assign.name.token.getText());
+        }
+
+        return objectBasicClass.getType();
     }
 
     @Override
@@ -289,7 +383,7 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
                 continue;
             }
             var localInit = local.value.accept(this);
-            if (!Objects.equals(localInit.getName(), localType)) {
+            if (localInit != null && !Objects.equals(localInit.getName(), localType)) {
                 SymbolTable.error(let.ctx, local.type.token, "Type " + localInit.getName() + " of initialization expression of identifier " + local.name.token.getText() + " is incompatible with declared type " + localType);
                 return null;
             }

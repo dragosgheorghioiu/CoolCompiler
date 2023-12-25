@@ -1,18 +1,4 @@
-"06-resolve-id.cl", line 7:18, Semantic error: Undeclared identifier cool.compiler.Id@7d417077
-"06-resolve-id.cl", line 12:15, Semantic error: Undeclared identifier cool.compiler.Id@7dc36524
-"06-resolve-id.cl", line 18:5, Semantic error: Class A redefines attribute f
-Exception in thread "main" java.lang.NullPointerException: Cannot invoke "cool.structures.ClassSymbol.getName()" because "localInit" is null
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:292)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:9)
-	at cool.compiler.Let.accept(ASTNode.java:397)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:153)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:9)
-	at cool.compiler.ClassMethod.accept(ASTNode.java:78)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:48)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:9)
-	at cool.compiler.ClassDef.accept(ASTNode.java:50)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:14)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:9)
-	at cool.compiler.Program.accept(ASTNode.java:33)
-	at cool.compiler.Compiler.main(Compiler.java:144)
-	at cool.tester.Tester2.main(Tester2.java:34)
+"06-resolve-id.cl", line 3:24, Semantic error: Undefined identifier u
+"06-resolve-id.cl", line 4:24, Semantic error: Undefined identifier y
+"06-resolve-id.cl", line 4:36, Semantic error: Undefined identifier v
+Compilation halted

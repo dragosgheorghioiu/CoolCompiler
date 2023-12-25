@@ -227,8 +227,8 @@ class MultDiv extends Expression {
 class RelationalComp extends Expression {
     Expression left;
     Expression right;
-    String op;
-    RelationalComp(Token token, Expression left, Expression right, String op, CoolParser.RelationalContext ctx) {
+    Id op;
+    RelationalComp(Token token, Expression left, Expression right, Id op, CoolParser.RelationalContext ctx) {
         super(token);
         this.left = left;
         this.right = right;

@@ -106,7 +106,7 @@ public class PrintVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(RelationalComp rel) {
-        printIndent(rel.op);
+        printIndent(rel.op.token.getText());
         indent++;
         rel.left.accept(this);
         rel.right.accept(this);

@@ -3,8 +3,8 @@ package cool.structures;
 public class StringBasicClass extends ObjectBasicClass{
     public StringBasicClass(Scope globalScope) {
         super(globalScope, "String");
-        type.symbols.put("length", new FeatureSymbol("length"));
-        type.symbols.put("concat", new FeatureSymbol("concat"));
-        type.symbols.put("substr", new FeatureSymbol("substr"));
+        type.methodSymbols.put("length", new MethodSymbol(globalScope, "length"));
+        type.methodSymbols.put("concat", new MethodSymbol(globalScope, "concat"));
+        type.methodSymbols.put("substr", new MethodSymbol(globalScope, "substr"));
     }
 }

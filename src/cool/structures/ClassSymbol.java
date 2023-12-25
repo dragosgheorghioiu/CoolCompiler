@@ -4,7 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ClassSymbol extends IdSymbol implements Scope {
-    Map<String, FeatureSymbol> symbols = new LinkedHashMap<>();
+    Map<String, IdSymbol> attributeSymbols = new LinkedHashMap<>();
+    Map<String, MethodSymbol> methodSymbols = new LinkedHashMap<>();
     protected Scope parent;
     protected String parentClass;
 
@@ -15,20 +16,37 @@ public class ClassSymbol extends IdSymbol implements Scope {
 
     @Override
     public boolean add(Symbol sym) {
-        if (symbols.containsKey(sym.getName()))
-            return false;
-
-        symbols.put(sym.getName(), (FeatureSymbol) sym);
+        if (sym instanceof IdSymbol) {
+            var id = (IdSymbol) sym;
+            if (attributeSymbols.containsKey(id.getName())) {
+                return false;
+            }
+            attributeSymbols.put(id.getName(), id);
+            return true;
+        }
+        if (sym instanceof MethodSymbol) {
+            var method = (MethodSymbol) sym;
+            if (methodSymbols.containsKey(method.getName())) {
+                return false;
+            }
+            methodSymbols.put(method.getName(), method);
+            return true;
+        }
 
         return true;
     }
 
     @Override
     public Symbol lookup(String s) {
-        var sym = symbols.get(s);
+        var sym = attributeSymbols.get(s);
 
         if (sym != null)
             return sym;
+
+        var symMethod = methodSymbols.get(s);
+
+        if (symMethod != null)
+            return symMethod;
 
         if (parent != null)
             return parent.lookup(s);
@@ -59,6 +77,13 @@ public class ClassSymbol extends IdSymbol implements Scope {
         this.parentClass = parentClass;
     }
     public Map<String, FeatureSymbol> getFeatures() {
-        return symbols;
+        var features = new LinkedHashMap<String, FeatureSymbol>();
+        for (var entry : attributeSymbols.entrySet()) {
+            features.put(entry.getKey(), entry.getValue());
+        }
+        for (var entry : methodSymbols.entrySet()) {
+            features.put(entry.getKey(), entry.getValue());
+        }
+        return features;
     }
 }

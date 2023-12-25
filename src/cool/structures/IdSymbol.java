@@ -8,9 +8,6 @@ public class IdSymbol extends FeatureSymbol {
     }
 
     public void setType(ClassSymbol classs) {
-        if (type != null) {
-            throw new RuntimeException("Type already set");
-        }
         this.type = classs;
     }
 

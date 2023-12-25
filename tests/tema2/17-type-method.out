@@ -1,2 +1,4 @@
 "17-type-method.cl", line 4:27, Semantic error: Type Bool of method g is incompatible with declared return type Int
+"17-type-method.cl", line 8:23, Semantic error: Type C of method i is incompatible with declared return type B
+"17-type-method.cl", line 10:23, Semantic error: Type B of method j is incompatible with declared return type C
 Compilation halted
