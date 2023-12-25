@@ -1,29 +1,21 @@
 class A {
-    x : Bool;
-    y : Int;
-    b : B;
-    c : C;
-
-    f() : Object {
-        b <- b
+    f(a : A) : Object {
+        a <- new A
     };
 
-    g() : Object {
-        b <- c
+    g(a : A) : Object {
+        a <- new B
     };
 
-    h() : Object {
-        c <- b
+    h(b : B) : Object {
+        b <- new A
     };
 
-    i() : Object {
-        self <- self
+    i(b : B) : Object {
+        b <- new C
     };
 
-    j() : Object {
-        x <- y
-    };
+    j : Bool <- not isvoid new B;
 };
 
-class B {};
-class C inherits B {};
+class B inherits A {};

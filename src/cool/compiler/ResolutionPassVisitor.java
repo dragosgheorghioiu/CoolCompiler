@@ -319,6 +319,9 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         var objectBasicClass = (ObjectBasicClass) SymbolTable.globals.lookup("Object");
         var declaredType = assign.name.accept(this);
         var valueType = assign.value.accept(this);
+        if (declaredType == null || valueType == null) {
+            return objectBasicClass.getType();
+        }
         var parentValueType = valueType.getParentClassSymbol();
 
         if (Objects.equals(declaredType.getName(), valueType.getName())) {
@@ -341,12 +344,20 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(New neww) {
-        return null;
+        var newwType = neww.name.token.getText();
+        var globalScope = SymbolTable.globals;
+        var expr = (IdSymbol) globalScope.lookup(newwType);
+        if (expr == null) {
+            SymbolTable.error(neww.ctx, neww.name.token, "new is used with undefined type " + newwType);
+            return null;
+        }
+        return expr.getType();
     }
 
     @Override
     public ClassSymbol visit(Isvoid isvoid) {
-        return null;
+        var expr = (BoolBasicClass) SymbolTable.globals.lookup("Bool");
+        return expr.getType();
     }
 
     @Override

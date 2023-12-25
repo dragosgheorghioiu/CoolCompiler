@@ -1,4 +1,5 @@
 "19-self_type.cl", line 2:9, Semantic error: Class A has attribute x with undefined type SELF_TYPE
 "19-self_type.cl", line 5:11, Semantic error: Method h of class A has formal parameter y with illegal type SELF_TYPE
 "19-self_type.cl", line 19:12, Semantic error: Type A of method f1 is incompatible with declared return type SELF_TYPE
+"19-self_type.cl", line 30:17, Semantic error: Type B of initialization expression of identifier a is incompatible with declared type A
 Compilation halted

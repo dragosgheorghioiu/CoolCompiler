@@ -1,0 +1,4 @@
+"15-type-let.cl", line 4:22, Semantic error: Type Bool of initialization expression of identifier y is incompatible with declared type Int
+"15-type-let.cl", line 18:27, Semantic error: Undefined identifier z
+"15-type-let.cl", line 14:14, Semantic error: Type Int of assigned expression is incompatible with declared type Bool of identifier u
+Compilation halted

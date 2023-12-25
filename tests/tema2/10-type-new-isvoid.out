@@ -1,15 +1,3 @@
-Exception in thread "main" java.lang.NullPointerException: Cannot invoke "cool.structures.ClassSymbol.getParentClassSymbol()" because "valueType" is null
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:322)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:9)
-	at cool.compiler.Assign.accept(ASTNode.java:255)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:158)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:9)
-	at cool.compiler.ClassMethod.accept(ASTNode.java:78)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:48)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:9)
-	at cool.compiler.ClassDef.accept(ASTNode.java:50)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:14)
-	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:9)
-	at cool.compiler.Program.accept(ASTNode.java:33)
-	at cool.compiler.Compiler.main(Compiler.java:144)
-	at cool.tester.Tester2.main(Tester2.java:34)
+"10-type-new-isvoid.cl", line 11:14, Semantic error: Type A of assigned expression is incompatible with declared type B of identifier b
+"10-type-new-isvoid.cl", line 15:18, Semantic error: new is used with undefined type C
+Compilation halted
