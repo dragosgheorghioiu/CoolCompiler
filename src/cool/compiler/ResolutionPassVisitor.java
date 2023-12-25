@@ -181,7 +181,10 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(Id id) {
-        return null;
+        var currentScope = id.getScope();
+        var symbol = (IdSymbol) currentScope.lookup(id.token.getText());
+
+        return symbol.getType();
     }
 
     @Override
@@ -274,16 +277,47 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(Let let) {
-        return null;
+        for (var local : let.local_vars) {
+            var localType = local.type.token.getText();
+
+            if (SymbolTable.globals.lookup(localType) == null) {
+                SymbolTable.error(let.ctx, local.type.token, "Let variable " + local.name.token.getText() + " has undefined type " + localType);
+                return null;
+            }
+
+            if (local.value == null) {
+                continue;
+            }
+            var localInit = local.value.accept(this);
+            if (!Objects.equals(localInit.getName(), localType)) {
+                SymbolTable.error(let.ctx, local.type.token, "Type " + localInit.getName() + " of initialization expression of identifier " + local.name.token.getText() + " is incompatible with declared type " + localType);
+                return null;
+            }
+
+        }
+
+        return let.body.accept(this);
     }
 
     @Override
     public ClassSymbol visit(Case casee) {
+        var caseType = casee.checked_expression.accept(this);
+        for (var branch : casee.branches) {
+            var branchType = branch.accept(this);
+        }
         return null;
     }
 
     @Override
     public ClassSymbol visit(CaseBranch caseBranch) {
+        var id = caseBranch.temp_name;
+        var type = caseBranch.new_type;
+        var currentScope = id.getScope();
+
+        if (currentScope != null && currentScope.lookup(type.token.getText()) == null) {
+            SymbolTable.error(caseBranch.ctx, type.token, "Case variable " + id.token.getText() + " has undefined type " + type.token.getText());
+            return null;
+        }
         return null;
     }
 

@@ -97,15 +97,9 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
         currentScope = symbol;
         for (var formal : method.formals) {
-            var formalSymbol = new IdSymbol(formal.name.token.getText());
-            formalSymbol.setType(new ClassSymbol(currentScope, formal.type.token.getText()));
-            if (!symbol.add(formalSymbol)) {
-                SymbolTable.error(formal.ctx, formal.name.token, "Method " + id.token.getText() + " of class " + currentClass + " redefines formal parameter " + formal.name.token.getText());
-            }
-            formal.accept(this);
-            formal.name.setScope(currentScope);
-            formal.name.setSymbol(formalSymbol);
+           formal.accept(this);
         }
+        method.body.accept(this);
         currentScope = currentScope.getParent();
         id.setScope(currentScope);
         id.setSymbol(symbol);
@@ -115,30 +109,31 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
     @Override
     public Void visit(Formal formal)
     {
+        var formalSymbol = new IdSymbol(formal.name.token.getText());
+        formalSymbol.setType(new ClassSymbol(currentScope, formal.type.token.getText()));
         var id = formal.name;
-        var symbol = new IdSymbol(id.token.getText());
-        symbol.setType(new ClassSymbol(currentScope, formal.type.token.getText()));
+        var symbol = (MethodSymbol) currentScope;
 
+        if (!symbol.add(formalSymbol)) {
+            SymbolTable.error(formal.ctx, formal.name.token, "Method " + symbol + " of class " + currentClass + " redefines formal parameter " + formal.name.token.getText());
+        }
         if (id.token.getText().equals("self")) {
             SymbolTable.error(id.ctx, id.token, "Method " + currentScope.toString() + " of class " + currentScope.getParent().toString() + " has formal parameter with illegal name self");
-            return null;
         }
-
-        id.setScope(currentScope);
-        id.setSymbol(symbol);
+        formal.name.setScope(currentScope);
+        formal.name.setSymbol(formalSymbol);
         return null;
     }
 
     @Override
     public Void visit(Id id) {
-        var symbol = (IdSymbol) currentScope.lookup(id.toString());
-
-        id.setScope(currentScope);
+        var symbol = (IdSymbol) currentScope.lookup(id.token.getText());
 
         if (symbol == null) {
             SymbolTable.error(id.ctx, id.token, "Undeclared identifier " + id);
         }
 
+        id.setScope(currentScope);
         id.setSymbol(symbol);
 
         return null;
@@ -231,16 +226,57 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(Let let) {
+        for (var localVar : let.local_vars) {
+            var localVarSymbol = new IdSymbol(localVar.name.token.getText());
+            localVarSymbol.setType(new ClassSymbol(currentScope, localVar.type.token.getText()));
+            currentScope = localVarSymbol.getType();
+            if (localVar.name.token.getText().equals("self")) {
+                SymbolTable.error(localVar.name.ctx, localVar.name.token, "Let variable has illegal name self");
+                return null;
+            }
+            localVar.name.setScope(currentScope);
+            localVar.name.setSymbol(localVarSymbol);
+        }
+
+        let.body.accept(this);
+
+        for (var localVar : let.local_vars) {
+            currentScope = currentScope.getParent();
+        }
+
         return null;
     }
 
     @Override
     public Void visit(Case casee) {
+        casee.checked_expression.accept(this);
+        for (var branch : casee.branches) {
+            branch.accept(this);
+        }
         return null;
     }
 
     @Override
     public Void visit(CaseBranch caseBranch) {
+        var symbol = new IdSymbol(caseBranch.temp_name.token.getText());
+        symbol.setType(new ClassSymbol(currentScope, caseBranch.new_type.token.getText()));
+
+        if (caseBranch.temp_name.token.getText().equals("self")) {
+            SymbolTable.error(caseBranch.ctx, caseBranch.temp_name.token, "Case variable has illegal name self");
+            return null;
+        }
+
+        if (caseBranch.new_type.token.getText().equals("SELF_TYPE")) {
+            SymbolTable.error(caseBranch.ctx, caseBranch.new_type.token, "Case variable " + caseBranch.temp_name.token.getText() + " has illegal type SELF_TYPE");
+            return null;
+        }
+
+        currentScope = symbol.getType();
+        caseBranch.body.accept(this);
+        currentScope = currentScope.getParent();
+
+        caseBranch.temp_name.setScope(currentScope);
+        caseBranch.temp_name.setSymbol(symbol);
         return null;
     }
 
