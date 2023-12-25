@@ -4,12 +4,23 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class MethodSymbol extends FeatureSymbol implements Scope {
+    protected ClassSymbol returnType;
     protected Map<String , Symbol> formals = new LinkedHashMap<>();
     protected Scope parent;
 
     public MethodSymbol(Scope parent, String name) {
         super(name);
         this.parent = parent;
+    }
+
+    public ClassSymbol getReturnType() {
+        return returnType;
+    }
+    public void setReturnType(ClassSymbol returnType) {
+        if (this.returnType != null) {
+            throw new RuntimeException("Return type already set");
+        }
+        this.returnType = returnType;
     }
 
     @Override

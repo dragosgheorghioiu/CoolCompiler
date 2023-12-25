@@ -3,7 +3,7 @@ package cool.structures;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class ClassSymbol extends IdSymbol implements Scope{
+public class ClassSymbol extends IdSymbol implements Scope {
     Map<String, FeatureSymbol> symbols = new LinkedHashMap<>();
     protected Scope parent;
     protected String parentClass;
@@ -43,6 +43,15 @@ public class ClassSymbol extends IdSymbol implements Scope{
     public String getParentClass() {
         return parentClass;
     }
+
+    public ClassSymbol getParentClassSymbol() {
+        var parentSymbol = (IdSymbol) parent.lookup(parentClass);
+        if (parentSymbol == null) {
+            return null;
+        }
+        return parentSymbol.getType();
+    }
+
     public void setParentClass(String parentClass) {
         if (this.parentClass != null) {
             throw new RuntimeException("Parent class already set");
@@ -52,10 +61,4 @@ public class ClassSymbol extends IdSymbol implements Scope{
     public Map<String, FeatureSymbol> getFeatures() {
         return symbols;
     }
-
-    public static final ClassSymbol INT = new ClassSymbol(null, "Int");
-    public static final ClassSymbol STRING = new ClassSymbol(null, "String");
-    public static final ClassSymbol BOOL = new ClassSymbol(null, "Bool");
-    public static final ClassSymbol IO = new ClassSymbol(null, "IO");
-    public static final ClassSymbol OBJECT = new ClassSymbol(null, "Object");
 }

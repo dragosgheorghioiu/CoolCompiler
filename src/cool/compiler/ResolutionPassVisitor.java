@@ -99,11 +99,83 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(ClassMethod method) {
-        return null;
+        var id = method.name;
+        var returnType = method.returnType;
+        var symbol = (MethodSymbol) id.getSymbol();
+        if (symbol == null) {
+            return null;
+        }
+
+        var classSymbol = (ClassSymbol) id.getScope();
+        var globalScope = id.getScope().getParent();
+
+        if (globalScope.lookup(returnType.token.getText()) == null && !returnType.token.getText().equals("SELF_TYPE")) {
+            SymbolTable.error(method.ctx, returnType.token, "Class " + classSymbol.getName() + " has method " + id.token.getText() + " with undefined return type " + returnType.token.getText());
+            return null;
+        }
+
+        var parent = classSymbol.getParentClassSymbol();
+        while (parent != null) {
+            var parentMethod = (MethodSymbol) parent.lookup(id.token.getText());
+            if (parentMethod == null) {
+                parent = parent.getParentClassSymbol();
+                continue;
+            }
+            if (!Objects.equals(parentMethod.getReturnType().getName(), returnType.token.getText())) {
+                SymbolTable.error(method.ctx, returnType.token, "Class " + classSymbol.getName() + " overrides method " + id.token.getText() + " but changes return type from " + parentMethod.getReturnType().getName() + " to " + returnType.token.getText());
+                return null;
+            }
+            if (parentMethod.getFormals().size() != method.formals.size()) {
+                SymbolTable.error(method.ctx, id.token, "Class " + classSymbol.getName() + " overrides method " + id.token.getText() + " with different number of formal parameters");
+                return null;
+            }
+            var formalSymbols = parentMethod.getFormals();
+            int i = 0;
+            for (var formal : formalSymbols.entrySet()) {
+                var formalSymbol = (IdSymbol) formal.getValue();
+                var formalType = formalSymbol.getType();
+                var currentFormal = method.formals.get(i);
+                var currentFormalType = currentFormal.type.token.getText();
+
+                if (!Objects.equals(formalType.getName(), currentFormalType)) {
+                    SymbolTable.error(method.ctx, currentFormal.type.token, "Class " + classSymbol.getName() + " overrides method " + id.token.getText() + " but changes type of formal parameter " + currentFormal.name.token.getText() + " from " + formalType.getName() + " to " + currentFormalType);
+                    return null;
+                }
+                i++;
+            }
+            return null;
+        }
+
+        for (var formal : method.formals) {
+            formal.accept(this);
+        }
+
+        ClassSymbol body = method.body.accept(this);
+        if (body == null) {
+            return null;
+        }
+        if (!Objects.equals(body.getName(), returnType.token.getText())) {
+            SymbolTable.error(method.ctx, returnType.token, "Type " + body.getName() + " of method " + id.token.getText() + " is incompatible with declared return type " + returnType.token.getText());
+            return null;
+        }
+
+        return symbol.getReturnType();
     }
 
     @Override
     public ClassSymbol visit(Formal formal) {
+        var id = formal.name;
+        var type = formal.type;
+        var currentScope = id.getScope().getParent();
+
+        if (type.token.getText().equals("SELF_TYPE")) {
+            SymbolTable.error(formal.ctx, type.token, "Method " + id.getScope().toString() + " of class " + currentScope.toString() + " has formal parameter " + id.token.getText() + " with illegal type SELF_TYPE");
+            return null;
+        }
+        if (currentScope.lookup(type.token.getText()) == null) {
+            SymbolTable.error(formal.ctx, type.token, "Method " + id.getScope().toString() + " of class " + currentScope + " has formal parameter " + id.token.getText() + " with undefined type " + type.token.getText());
+            return null;
+        }
         return null;
     }
 
@@ -119,17 +191,20 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(IntType intt) {
-        return ClassSymbol.INT;
+        var expr = (IntBasicClass) SymbolTable.globals.lookup("Int");
+        return expr.getType();
     }
 
     @Override
     public ClassSymbol visit(StringType str) {
-        return ClassSymbol.STRING;
+        var expr = (StringBasicClass) SymbolTable.globals.lookup("String");
+        return expr.getType();
     }
 
     @Override
     public ClassSymbol visit(BoolType bool) {
-        return ClassSymbol.BOOL;
+        var expr = (BoolBasicClass) SymbolTable.globals.lookup("Bool");
+        return expr.getType();
     }
 
     @Override

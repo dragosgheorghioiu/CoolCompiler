@@ -1,9 +1,6 @@
 package cool.compiler;
 
-import cool.structures.ClassSymbol;
-import cool.structures.IdSymbol;
-import cool.structures.Scope;
-import cool.structures.SymbolTable;
+import cool.structures.*;
 
 import java.util.List;
 import java.util.Objects;
@@ -82,29 +79,53 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
             return null;
         }
 
-        attribute.name.setScope(currentScope);
-        attribute.name.setSymbol(symbol);
+        id.setScope(currentScope);
+        id.setSymbol(symbol);
         return null;
     }
 
     @Override
     public Void visit(ClassMethod method) {
         var id = method.name;
-        var symbol = new IdSymbol(id.token.getText());
-        symbol.setType(new ClassSymbol(currentScope, method.returnType.token.getText()));
+        var symbol = new MethodSymbol(currentScope, id.token.getText());
+        symbol.setReturnType(new ClassSymbol(currentScope, method.returnType.token.getText()));
 
-        currentScope = symbol.getType();
+        if (!currentScope.add(symbol)) {
+            SymbolTable.error(id.ctx, id.token, "Class " + currentClass + " redefines method " + id.token.getText());
+            return null;
+        }
+
+        currentScope = symbol;
         for (var formal : method.formals) {
+            var formalSymbol = new IdSymbol(formal.name.token.getText());
+            formalSymbol.setType(new ClassSymbol(currentScope, formal.type.token.getText()));
+            if (!symbol.add(formalSymbol)) {
+                SymbolTable.error(formal.ctx, formal.name.token, "Method " + id.token.getText() + " of class " + currentClass + " redefines formal parameter " + formal.name.token.getText());
+            }
             formal.accept(this);
+            formal.name.setScope(currentScope);
+            formal.name.setSymbol(formalSymbol);
         }
         currentScope = currentScope.getParent();
+        id.setScope(currentScope);
+        id.setSymbol(symbol);
         return null;
     }
 
     @Override
     public Void visit(Formal formal)
     {
-//        System.out.println("Formal");
+        var id = formal.name;
+        var symbol = new IdSymbol(id.token.getText());
+        symbol.setType(new ClassSymbol(currentScope, formal.type.token.getText()));
+
+        if (id.token.getText().equals("self")) {
+            SymbolTable.error(id.ctx, id.token, "Method " + currentScope.toString() + " of class " + currentScope.getParent().toString() + " has formal parameter with illegal name self");
+            return null;
+        }
+
+        id.setScope(currentScope);
+        id.setSymbol(symbol);
         return null;
     }
 

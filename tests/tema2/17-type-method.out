@@ -1,0 +1,2 @@
+"17-type-method.cl", line 4:27, Semantic error: Type Bool of method g is incompatible with declared return type Int
+Compilation halted
