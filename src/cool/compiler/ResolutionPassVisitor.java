@@ -8,6 +8,42 @@ import java.util.Objects;
 
 public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
+    protected ArrayList<String> getInheritanceChain(IdSymbol currentClass) {
+        ArrayList<String> inheritanceChain = new ArrayList<>();
+        var copy = currentClass.getType();
+        while (copy != null) {
+            inheritanceChain.add(copy.getName());
+            copy = copy.getParentClassSymbol();
+        }
+        inheritanceChain.add("Object");
+        return inheritanceChain;
+    }
+
+    protected String getLeastUpperBound(List<List<String>> inheritanceChains) {
+        String resultType = null;
+        for (var type : inheritanceChains.get(0)) {
+            boolean found = true;
+            for (var branch : inheritanceChains) {
+                if (!branch.contains(type)) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                resultType = type;
+                break;
+            }
+        }
+        return resultType;
+    }
+
+    protected boolean checkValidType(IdSymbol type, String superType) {
+        var realType = (IdSymbol) SymbolTable.globals.lookup(type.getName());
+        if (!getInheritanceChain(realType).contains(superType)) {
+            return false;
+        }
+        return true;
+    }
     @Override
     public ClassSymbol visit(Program program) {
         for (var classs : program.classes) {
@@ -87,14 +123,8 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
             if (valueType == null) {
                 return null;
             }
-            if (!Objects.equals(((IdSymbol) id.getSymbol()).getType().getName(), valueType.getName())) {
-                SymbolTable.error(attribute.ctx, attribute.type.token,
-                        "Type "
-                        + valueType.getName()
-                        + " of initialization expression of attribute "
-                        + id.token.getText()
-                        + " is incompatible with declared type "
-                        + ((IdSymbol) id.getSymbol()).getType().getName());
+            if (!checkValidType(valueType, attribute.type.token.getText())) {
+                SymbolTable.error(attribute.ctx, attribute.value.token, "Type " + valueType.getName() + " of initialization expression of attribute " + id.token.getText() + " is incompatible with declared type " + attribute.type.token.getText());
                 return null;
             }
         }
@@ -159,16 +189,16 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         if (body == null) {
             return null;
         }
-        var typeCopy = body;
-        while (typeCopy != null) {
-            if (Objects.equals(typeCopy.getName(), returnType.token.getText())) {
-                return symbol.getReturnType();
-            }
-            typeCopy = typeCopy.getParentClassSymbol();
+        var realBody = (IdSymbol) globalScope.lookup(body.getName());
+        if (realBody == null) {
+            return null;
         }
-        SymbolTable.error(method.ctx, returnType.token, "Type " + body.getName() + " of method " + id.token.getText() + " is incompatible with declared return type " + returnType.token.getText());
+        if (!getInheritanceChain(realBody).contains(returnType.token.getText())) {
+            SymbolTable.error(method.ctx, method.body.token, "Type " + body.getName() + " of the body of method " + id.token.getText() + " is incompatible with declared return type " + returnType.token.getText());
+            return null;
+        }
 
-        return null;
+        return symbol.getReturnType();
     }
 
     @Override
@@ -211,7 +241,11 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
             SymbolTable.error(id.ctx, id.token, "Undefined identifier " + id.token.getText());
             return null;
         }
-        return symbol.getType();
+        var realSymbolType = (IdSymbol) SymbolTable.globals.lookup(symbol.getType().getName());
+        if (realSymbolType == null) {
+            return null;
+        }
+        return realSymbolType.getType();
     }
 
     @Override
@@ -321,30 +355,19 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(Assign assign) {
-        var objectBasicClass = (ObjectBasicClass) SymbolTable.globals.lookup("Object");
-        var declaredType = assign.name.accept(this);
-        var valueType = assign.value.accept(this);
-        if (declaredType == null || valueType == null) {
-            return objectBasicClass.getType();
+        var id = assign.name.accept(this);
+        var expr = assign.value.accept(this);
+        if (id == null || expr == null) {
+            return null;
         }
-        var parentValueType = valueType.getParentClassSymbol();
+        var realId = (IdSymbol) SymbolTable.globals.lookup(id.getName());
+        var realExpr = (IdSymbol) SymbolTable.globals.lookup(expr.getName());
 
-        if (Objects.equals(declaredType.getName(), valueType.getName())) {
-            return objectBasicClass.getType();
+        if (!getInheritanceChain(realExpr).contains(realId.getName())) {
+            SymbolTable.error(assign.ctx, assign.value.token, "Type " + expr.getName() + " of assigned expression is incompatible with declared type " + id.getName() + " of identifier " + assign.name.token.getText());
+            return null;
         }
-
-        while (parentValueType != null) {
-            if (Objects.equals(parentValueType.getName(), declaredType.getName())) {
-                return objectBasicClass.getType();
-            }
-            parentValueType = parentValueType.getParentClassSymbol();
-        }
-
-        if (parentValueType == null) {
-            SymbolTable.error(assign.ctx, assign.value.token, "Type " + valueType.getName() + " of assigned expression is incompatible with declared type " + declaredType.getName() + " of identifier " + assign.name.token.getText());
-        }
-
-        return objectBasicClass.getType();
+        return expr;
     }
 
     @Override
@@ -394,22 +417,19 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         IdSymbol realThenType = (IdSymbol) globalScope.lookup(thenType.getName());
         IdSymbol realElseType = (IdSymbol) globalScope.lookup(elseType.getName());
 
-        List<String> inheritanceChain = new ArrayList<>();
-        var thenCopy = realThenType;
-        while (thenCopy != null) {
-            inheritanceChain.add(thenCopy.getName());
-            thenCopy = (IdSymbol) thenCopy.getType().getParent().lookup(thenCopy.getType().getParentClass());
-        }
-        var elseCopy = realElseType;
-        while (elseCopy != null) {
-            if (inheritanceChain.contains(elseCopy.getName())) {
-                return elseCopy.getType();
-            }
-            inheritanceChain.add(elseCopy.getName());
-            elseCopy = (IdSymbol) elseCopy.getType().getParent().lookup(elseCopy.getType().getParentClass());
+        var thenInheritanceChain = getInheritanceChain(realThenType);
+        var elseInheritanceChain = getInheritanceChain(realElseType);
+
+        List<List<String>> branchTypes = new ArrayList<>();
+        branchTypes.add(thenInheritanceChain);
+        branchTypes.add(elseInheritanceChain);
+
+        String resultType = getLeastUpperBound(branchTypes);
+        if (resultType == null) {
+            return objectBasicClass.getType();
         }
 
-        return objectBasicClass.getType();
+        return ((IdSymbol) SymbolTable.globals.lookup(resultType)).getType();
     }
 
     @Override
@@ -418,7 +438,7 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         if (!Objects.equals(expr.getName(), "Bool")) {
             SymbolTable.error(whilee.ctx, whilee.condition.token, "While condition has type " + expr.getName() + " instead of Bool");
         }
-        return whilee.body.accept(this);
+        return ((ObjectBasicClass) SymbolTable.globals.lookup("Object")).getType();
     }
 
     @Override
@@ -428,18 +448,19 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
             if (SymbolTable.globals.lookup(localType) == null) {
                 SymbolTable.error(let.ctx, local.type.token, "Let variable " + local.name.token.getText() + " has undefined type " + localType);
-                return null;
+                continue;
             }
 
             if (local.value == null) {
                 continue;
             }
             var localInit = local.value.accept(this);
-            if (localInit != null && !Objects.equals(localInit.getName(), localType)) {
-                SymbolTable.error(let.ctx, local.type.token, "Type " + localInit.getName() + " of initialization expression of identifier " + local.name.token.getText() + " is incompatible with declared type " + localType);
-                return null;
+            if (localInit == null) {
+                continue;
             }
-
+            if (!checkValidType(localInit, localType)) {
+                SymbolTable.error(let.ctx, local.value.token, "Type " + localInit.getName() + " of initialization expression of identifier " + local.name.token.getText() + " is incompatible with declared type " + localType);
+            }
         }
 
         return let.body.accept(this);
@@ -447,11 +468,20 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(Case casee) {
-        var caseType = casee.checked_expression.accept(this);
+        casee.checked_expression.accept(this);
+        List<List<String>> branchTypes = new ArrayList<>();
         for (var branch : casee.branches) {
             var branchType = branch.accept(this);
+            var realBranchType = (IdSymbol) SymbolTable.globals.lookup(branchType.getName());
+            branchTypes.add(getInheritanceChain(realBranchType));
         }
-        return null;
+        String resultType = getLeastUpperBound(branchTypes);
+
+        if (resultType == null) {
+            return ((ObjectBasicClass) SymbolTable.globals.lookup("Object")).getType();
+        }
+
+        return ((IdSymbol) SymbolTable.globals.lookup(resultType)).getType();
     }
 
     @Override
@@ -462,9 +492,8 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
         if (currentScope != null && currentScope.lookup(type.token.getText()) == null) {
             SymbolTable.error(caseBranch.ctx, type.token, "Case variable " + id.token.getText() + " has undefined type " + type.token.getText());
-            return null;
         }
-        return null;
+        return caseBranch.body.accept(this);
     }
 
     @Override

@@ -258,8 +258,11 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
             localVar.name.setScope(currentScope);
             localVar.name.setSymbol(localVarSymbol);
         }
+        currentScope = new MethodSymbol(currentScope, "let-body");
 
         let.body.accept(this);
+
+        currentScope = currentScope.getParent();
 
         for (var localVar : let.local_vars) {
             currentScope = currentScope.getParent();

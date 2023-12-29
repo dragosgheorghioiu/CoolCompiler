@@ -7,5 +7,6 @@ public class IOBasicClass extends ObjectBasicClass{
         type.methodSymbols.put("out_int", new MethodSymbol(globalScope, "out_int"));
         type.methodSymbols.put("in_string", new MethodSymbol(globalScope, "in_string"));
         type.methodSymbols.put("in_int", new MethodSymbol(globalScope, "in_int"));
+        this.getType().setParentClass("Object");
     }
 }

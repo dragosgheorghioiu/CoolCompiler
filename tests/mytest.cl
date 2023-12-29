@@ -1,15 +1,11 @@
 class A {
-    a : A;
-
-    f(x : Int) : Object {
-        while 0 < x loop
-            x <- x - 1
-        pool
-    };
-
-    g(x : Int) : Object {
-        a <- while a loop
-                 x <- x - 1
-             pool
-    };
+    x : Int <- 0;
+    y : Int;
+    z : Int <- true;
+    b1 : B <- new B;
+    b2 : B <- new C;
+    c  : C <- new B;
 };
+
+class B {};
+class C inherits B {};
