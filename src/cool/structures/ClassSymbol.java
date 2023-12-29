@@ -12,6 +12,9 @@ public class ClassSymbol extends IdSymbol implements Scope {
     public ClassSymbol(Scope parent, String name) {
         super(name);
         this.parent = parent;
+        methodSymbols.put("abort", new MethodSymbol(parent, "abort"));
+        methodSymbols.put("type_name", new MethodSymbol(parent, "type_name"));
+        methodSymbols.put("copy", new MethodSymbol(parent, "copy"));
     }
 
     @Override

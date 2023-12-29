@@ -159,12 +159,16 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         if (body == null) {
             return null;
         }
-        if (!Objects.equals(body.getName(), returnType.token.getText())) {
-            SymbolTable.error(method.ctx, returnType.token, "Type " + body.getName() + " of method " + id.token.getText() + " is incompatible with declared return type " + returnType.token.getText());
-            return null;
+        var typeCopy = body;
+        while (typeCopy != null) {
+            if (Objects.equals(typeCopy.getName(), returnType.token.getText())) {
+                return symbol.getReturnType();
+            }
+            typeCopy = typeCopy.getParentClassSymbol();
         }
+        SymbolTable.error(method.ctx, returnType.token, "Type " + body.getName() + " of method " + id.token.getText() + " is incompatible with declared return type " + returnType.token.getText());
 
-        return symbol.getReturnType();
+        return null;
     }
 
     @Override
@@ -196,7 +200,9 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
             }
             return ((ClassSymbol) currentScope);
         }
-
+        if (currentScope == null) {
+            return null;
+        }
         if (currentScope.toString().equals("let-" + id.token.getText())) {
             currentScope = currentScope.getParent();
         }
@@ -205,7 +211,6 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
             SymbolTable.error(id.ctx, id.token, "Undefined identifier " + id.token.getText());
             return null;
         }
-
         return symbol.getType();
     }
 
@@ -372,12 +377,48 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(If iff) {
-        return null;
+        var objectBasicClass = (ObjectBasicClass) SymbolTable.globals.lookup("Object");
+        var expr = iff.condition.accept(this);
+        if (expr != null && !Objects.equals(expr.getName(), "Bool")) {
+            SymbolTable.error(iff.ctx, iff.condition.token, "If condition has type " + expr.getName() + " instead of Bool");
+            return objectBasicClass.getType();
+        }
+        var thenType = iff.then.accept(this);
+        var elseType = iff.elsee.accept(this);
+
+        // get least upper bound
+        if (thenType == null || elseType == null) {
+            return null;
+        }
+        var globalScope = SymbolTable.globals;
+        IdSymbol realThenType = (IdSymbol) globalScope.lookup(thenType.getName());
+        IdSymbol realElseType = (IdSymbol) globalScope.lookup(elseType.getName());
+
+        List<String> inheritanceChain = new ArrayList<>();
+        var thenCopy = realThenType;
+        while (thenCopy != null) {
+            inheritanceChain.add(thenCopy.getName());
+            thenCopy = (IdSymbol) thenCopy.getType().getParent().lookup(thenCopy.getType().getParentClass());
+        }
+        var elseCopy = realElseType;
+        while (elseCopy != null) {
+            if (inheritanceChain.contains(elseCopy.getName())) {
+                return elseCopy.getType();
+            }
+            inheritanceChain.add(elseCopy.getName());
+            elseCopy = (IdSymbol) elseCopy.getType().getParent().lookup(elseCopy.getType().getParentClass());
+        }
+
+        return objectBasicClass.getType();
     }
 
     @Override
     public ClassSymbol visit(While whilee) {
-        return null;
+        var expr = whilee.condition.accept(this);
+        if (!Objects.equals(expr.getName(), "Bool")) {
+            SymbolTable.error(whilee.ctx, whilee.condition.token, "While condition has type " + expr.getName() + " instead of Bool");
+        }
+        return whilee.body.accept(this);
     }
 
     @Override
@@ -428,6 +469,10 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
     @Override
     public ClassSymbol visit(Block block) {
-        return null;
+        ClassSymbol last_expression = null;
+        for (var expr : block.expressions) {
+            last_expression = expr.accept(this);
+        }
+        return last_expression;
     }
 }

@@ -225,11 +225,21 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(If iff) {
+        currentScope = new MethodSymbol(currentScope, "if");
+        iff.condition.accept(this);
+        iff.then.accept(this);
+        iff.elsee.accept(this);
+        currentScope = currentScope.getParent();
         return null;
+
     }
 
     @Override
     public Void visit(While whilee) {
+        currentScope = new MethodSymbol(currentScope, "while");
+        whilee.condition.accept(this);
+        whilee.body.accept(this);
+        currentScope = currentScope.getParent();
         return null;
     }
 
