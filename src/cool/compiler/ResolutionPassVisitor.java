@@ -56,6 +56,14 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
     public ClassSymbol visit(ClassDef classDef) {
         var id = classDef.name;
         var symbol = (IdSymbol) id.getSymbol();
+//        System.out.println("Id: " + id.token.getText());
+//        var symbolcopy = symbol.getType();
+//        while (symbolcopy != null) {
+//            for (var token : symbolcopy.getFeatures().keySet()) {
+//                System.out.println(token);
+//            }
+//            symbolcopy = symbolcopy.getParentClassSymbol();
+//        }
 
         if (symbol == null) {
             return null;
