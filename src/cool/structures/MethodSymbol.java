@@ -7,6 +7,7 @@ public class MethodSymbol extends FeatureSymbol implements Scope {
     protected ClassSymbol returnType;
     protected Map<String , Symbol> formals = new LinkedHashMap<>();
     protected Scope parent;
+    protected boolean isLetScope = false;
 
     public MethodSymbol(Scope parent, String name) {
         super(name);
@@ -53,5 +54,13 @@ public class MethodSymbol extends FeatureSymbol implements Scope {
 
     public Map<String, Symbol> getFormals() {
         return formals;
+    }
+
+    public void setLetScope(boolean isLetScope) {
+        this.isLetScope = isLetScope;
+    }
+
+    public boolean isLetScope() {
+        return isLetScope;
     }
 }

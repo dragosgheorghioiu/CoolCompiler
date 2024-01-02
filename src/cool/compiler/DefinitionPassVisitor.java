@@ -7,7 +7,6 @@ import java.util.Objects;
 
 public class DefinitionPassVisitor implements ASTVisitor<Void> {
     Scope currentScope = SymbolTable.globals;
-    String currentClass = null;
 
     public Void visit (Program prog) {
         for (var classs : prog.classes) {
@@ -25,7 +24,6 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
         var symbol = new IdSymbol(id.token.getText());
         symbol.setType(new ClassSymbol(currentScope, id.token.getText()));
         currentScope = symbol.getType();
-
 
         if (!currentScope.getParent().add(symbol))
         {
@@ -47,13 +45,13 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
                 }
             }
             symbol.getType().setParentClass(classDef.parent.token.getText());
+        } else {
+            symbol.getType().setParentClass("Object");
         }
 
-        currentClass = id.token.getText();
         for (var feature : classDef.features) {
             feature.accept(this);
         }
-        currentClass = null;
 
         currentScope = currentScope.getParent();
 
@@ -71,11 +69,11 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
         symbol.setType(new ClassSymbol(currentScope, attribute.type.token.getText()));
         if (!currentScope.add(symbol)) {
-            SymbolTable.error(id.ctx, id.token, "Class " + currentClass + " redefines attribute " + id.token.getText());
+            SymbolTable.error(id.ctx, id.token, "Class " + currentScope + " redefines attribute " + id.token.getText());
             return null;
         }
         if (id.token.getText().equals("self")) {
-            SymbolTable.error(id.ctx, id.token, "Class " + currentClass + " has attribute with illegal name self");
+            SymbolTable.error(id.ctx, id.token, "Class " + currentScope + " has attribute with illegal name self");
             return null;
         }
 
@@ -94,7 +92,7 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
         symbol.setReturnType(new ClassSymbol(currentScope, method.returnType.token.getText()));
 
         if (!currentScope.add(symbol)) {
-            SymbolTable.error(id.ctx, id.token, "Class " + currentClass + " redefines method " + id.token.getText());
+            SymbolTable.error(id.ctx, id.token, "Class " + currentScope + " redefines method " + id.token.getText());
             return null;
         }
 
@@ -118,10 +116,10 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
         var symbol = (MethodSymbol) currentScope;
 
         if (!symbol.add(formalSymbol)) {
-            SymbolTable.error(formal.ctx, formal.name.token, "Method " + symbol + " of class " + currentClass + " redefines formal parameter " + formal.name.token.getText());
+            SymbolTable.error(formal.ctx, formal.name.token, "Method " + symbol + " of class " + currentScope.getParent() + " redefines formal parameter " + formal.name.token.getText());
         }
         if (id.token.getText().equals("self")) {
-            SymbolTable.error(id.ctx, id.token, "Method " + currentScope.toString() + " of class " + currentScope.getParent().toString() + " has formal parameter with illegal name self");
+            SymbolTable.error(id.ctx, id.token, "Method " + currentScope + " of class " + currentScope.getParent() + " has formal parameter with illegal name self");
         }
         formal.name.setScope(currentScope);
         formal.name.setSymbol(formalSymbol);
@@ -215,11 +213,19 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(ExplicitDispatch dispatch) {
+        dispatch.object.accept(this);
+        if (dispatch.parent != null) {
+            dispatch.parent.accept(this);
+        }
+        dispatch.parameters.forEach(p -> p.accept(this));
+        dispatch.method_name.setScope(currentScope);
         return null;
     }
 
     @Override
     public Void visit(SelfDispatch dispatch) {
+        dispatch.parameters.forEach(p -> p.accept(this));
+        dispatch.method_name.setScope(currentScope);
         return null;
     }
 
@@ -248,7 +254,9 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
         for (var localVar : let.local_vars) {
             var localVarSymbol = new IdSymbol(localVar.name.token.getText());
             localVarSymbol.setType(new ClassSymbol(currentScope, localVar.type.token.getText()));
-            currentScope = new MethodSymbol(currentScope, "let-" + localVar.name.token.getText());
+            var letScope = new MethodSymbol(currentScope, "let-" + localVar.name.token.getText());
+            letScope.setLetScope(true);
+            currentScope = letScope;
             if (localVar.name.token.getText().equals("self")) {
                 SymbolTable.error(localVar.name.ctx, localVar.name.token, "Let variable has illegal name self");
             }

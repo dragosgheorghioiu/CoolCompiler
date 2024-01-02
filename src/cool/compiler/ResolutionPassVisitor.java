@@ -1,6 +1,7 @@
 package cool.compiler;
 
 import cool.structures.*;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,17 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         }
         return true;
     }
+
+    protected ClassSymbol getSelfType(ClassSymbol caller, Scope callerScope) {
+        if (Objects.equals(caller.getName(), "SELF_TYPE")) {
+            while (callerScope.getParent().getParent() != null) {
+                callerScope = callerScope.getParent();
+            }
+            ClassSymbol callerClass = (ClassSymbol) callerScope;
+            caller = callerClass;
+        }
+        return caller;
+    }
     @Override
     public ClassSymbol visit(Program program) {
         for (var classs : program.classes) {
@@ -56,9 +68,10 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
     public ClassSymbol visit(ClassDef classDef) {
         var id = classDef.name;
         var symbol = (IdSymbol) id.getSymbol();
-//        System.out.println("Id: " + id.token.getText());
 //        var symbolcopy = symbol.getType();
+//        System.out.println("Id: " + id.token.getText());
 //        while (symbolcopy != null) {
+//            System.out.println("Symbol: " + symbolcopy.getName());
 //            for (var token : symbolcopy.getFeatures().keySet()) {
 //                System.out.println(token);
 //            }
@@ -131,7 +144,8 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
             if (valueType == null) {
                 return null;
             }
-            if (!checkValidType(valueType, attribute.type.token.getText())) {
+//            valueType = getSelfType(valueType, attribute.name.getScope());
+            if (Objects.equals(valueType.getName(), "SELF_TYPE") || !checkValidType(valueType, attribute.type.token.getText())) {
                 SymbolTable.error(attribute.ctx, attribute.value.token, "Type " + valueType.getName() + " of initialization expression of attribute " + id.token.getText() + " is incompatible with declared type " + attribute.type.token.getText());
                 return null;
             }
@@ -241,7 +255,7 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         if (currentScope == null) {
             return null;
         }
-        if (currentScope.toString().equals("let-" + id.token.getText())) {
+        if (currentScope instanceof MethodSymbol && currentScope.toString().equals("let-" + id.token.getText()) && ((MethodSymbol) currentScope).isLetScope()) {
             currentScope = currentScope.getParent();
         }
         var symbol = (IdSymbol) currentScope.lookup(id.token.getText());
@@ -396,14 +410,110 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         return expr.getType();
     }
 
+    private class DispatchCast {
+        public ASTNode dispatch;
+        public ASTNode caller;
+        public ASTNode method_name;
+        public List<Expression> parameters;
+        public ParserRuleContext ctx;
+
+        public DispatchCast(ASTNode dispatch, ASTNode caller, ASTNode method_name, List<Expression> parameters, ParserRuleContext ctx) {
+            this.dispatch = dispatch;
+            this.caller = caller;
+            this.method_name = method_name;
+            this.parameters = parameters;
+            this.ctx = ctx;
+        }
+    }
+    private ClassSymbol dispatchErrorChecking(Symbol searchMethod, DispatchCast dispatchCast, IdSymbol realCaller) {
+        if (searchMethod == null) {
+            SymbolTable.error(dispatchCast.ctx, dispatchCast.method_name.token, "Undefined method " + dispatchCast.method_name.token.getText() + " in class " + realCaller.getName());
+            return null;
+        }
+
+        var method = (MethodSymbol) searchMethod;
+        if (method.getFormals().size() != dispatchCast.parameters.size()) {
+            SymbolTable.error(dispatchCast.ctx, dispatchCast.method_name.token, "Method " + dispatchCast.method_name.token.getText() + " of class " + realCaller.getName() + " is applied to wrong number of arguments");
+            return null;
+        }
+        int i = 0;
+        for (var formal : method.getFormals().entrySet()) {
+            ClassSymbol formalType = ((ClassSymbol) formal.getValue());
+            ClassSymbol param = dispatchCast.parameters.get(i).accept(this);
+            if (!Objects.equals(formalType.getName(), param.getName())) {
+                SymbolTable.error(dispatchCast.ctx, dispatchCast.parameters.get(i).token, "In call to method " + dispatchCast.method_name.token.getText() + " of class " + realCaller.getName() + ", actual type " + param.getName() + " of formal parameter " + formal.getKey() + " is incompatible with declared type " + formalType.getName());
+                continue;
+            }
+            i++;
+        }
+        return method.getReturnType();
+    }
+
     @Override
     public ClassSymbol visit(ExplicitDispatch dispatch) {
-        return null;
+        var caller = dispatch.object.accept(this);
+//        System.out.println("Method: " + dispatch.method_name.token.getText());
+        if (caller == null) {
+            return null;
+        }
+        var callerScope = dispatch.method_name.getScope();
+        caller = getSelfType(caller, callerScope);
+//        if (Objects.equals(caller.getName(), "SELF_TYPE")) {
+//            var callerScope = dispatch.method_name.getScope();
+//            while (callerScope.getParent().getParent() != null) {
+//                callerScope = callerScope.getParent();
+//            }
+//            ClassSymbol callerClass = (ClassSymbol) callerScope;
+//            caller = callerClass;
+//        }
+
+        var realCaller = (IdSymbol) SymbolTable.globals.lookup(caller.getName());
+        if (realCaller == null) {
+            return null;
+        }
+
+        Symbol searchMethod = null;
+        var parentCaller = realCaller.getType();
+        while (parentCaller != null) {
+            searchMethod = parentCaller.lookup(dispatch.method_name.token.getText());
+            if (searchMethod != null) {
+                break;
+            }
+            parentCaller = parentCaller.getParentClassSymbol();
+        }
+
+        var dispatchCast = new DispatchCast(dispatch, dispatch.object, dispatch.method_name, dispatch.parameters, dispatch.ctx);
+
+        return dispatchErrorChecking(searchMethod, dispatchCast, realCaller);
     }
 
     @Override
     public ClassSymbol visit(SelfDispatch dispatch) {
-        return null;
+        var caller = dispatch.method_name.getScope();
+        if (caller == null) {
+            return null;
+        }
+        while (caller.getParent().getParent() != null) {
+            caller = caller.getParent();
+        }
+        ClassSymbol callerClass = (ClassSymbol) caller;
+        Symbol searchMethod = null;
+        var parentCaller = callerClass;
+        while (parentCaller != null) {
+            searchMethod = parentCaller.lookup(dispatch.method_name.token.getText());
+            if (searchMethod != null) {
+                break;
+            }
+            parentCaller = parentCaller.getParentClassSymbol();
+        }
+        if (searchMethod == null) {
+            SymbolTable.error(dispatch.ctx, dispatch.method_name.token, "Undefined method " + dispatch.method_name.token.getText() + " in class " + callerClass.getName());
+            return null;
+        }
+
+        var dispatchCast = new DispatchCast(dispatch, dispatch, dispatch.method_name, dispatch.parameters, dispatch.ctx);
+
+        return dispatchErrorChecking(searchMethod, dispatchCast, callerClass);
     }
 
     @Override

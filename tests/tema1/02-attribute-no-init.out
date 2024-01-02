@@ -1,12 +1,2 @@
-program
-  class
-    A
-    attribute
-      x
-      SELF_TYPE
-  class
-    B
-    A
-    attribute
-      y
-      Int
+"02-attribute-no-init.cl", line 2:9, Semantic error: Class A has attribute x with undefined type SELF_TYPE
+Compilation halted

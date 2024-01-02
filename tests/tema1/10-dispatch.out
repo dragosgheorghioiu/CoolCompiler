@@ -1,51 +1,19 @@
-program
-  class
-    A
-    method
-      f
-      formal
-        x
-        Int
-      Bool
-      implicit dispatch
-        f
-        +
-          x
-          1
-    method
-      g
-      formal
-        x
-        Int
-      formal
-        y
-        Int
-      Bool
-      .
-        self
-        g
-        +
-          x
-          1
-        +
-          y
-          1
-    method
-      h
-      formal
-        x
-        Int
-      A
-      .
-        .
-          new
-            A
-          A
-          h
-          +
-            x
-            1
-        h
-        +
-          x
-          2
+self
+new
+new
+Exception in thread "main" java.lang.ClassCastException: class cool.structures.IdSymbol cannot be cast to class cool.structures.ClassSymbol (cool.structures.IdSymbol and cool.structures.ClassSymbol are in unnamed module of loader 'app')
+	at cool.compiler.ResolutionPassVisitor.dispatchErrorChecking(ResolutionPassVisitor.java:429)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:495)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:10)
+	at cool.compiler.SelfDispatch.accept(ASTNode.java:316)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:198)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:10)
+	at cool.compiler.ClassMethod.accept(ASTNode.java:78)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:94)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:10)
+	at cool.compiler.ClassDef.accept(ASTNode.java:50)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:51)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:10)
+	at cool.compiler.Program.accept(ASTNode.java:33)
+	at cool.compiler.Compiler.main(Compiler.java:144)
+	at cool.tester.Tester1.main(Tester1.java:33)
