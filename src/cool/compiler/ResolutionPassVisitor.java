@@ -433,12 +433,14 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
         var method = (MethodSymbol) searchMethod;
         if (method.getFormals().size() != dispatchCast.parameters.size()) {
+            System.out.print(method.getFormals().size());
+            System.out.println(dispatchCast.parameters.size());
             SymbolTable.error(dispatchCast.ctx, dispatchCast.method_name.token, "Method " + dispatchCast.method_name.token.getText() + " of class " + realCaller.getName() + " is applied to wrong number of arguments");
             return null;
         }
         int i = 0;
         for (var formal : method.getFormals().entrySet()) {
-            ClassSymbol formalType = ((ClassSymbol) formal.getValue());
+            ClassSymbol formalType = ((IdSymbol) formal.getValue()).getType();
             ClassSymbol param = dispatchCast.parameters.get(i).accept(this);
             if (!Objects.equals(formalType.getName(), param.getName())) {
                 SymbolTable.error(dispatchCast.ctx, dispatchCast.parameters.get(i).token, "In call to method " + dispatchCast.method_name.token.getText() + " of class " + realCaller.getName() + ", actual type " + param.getName() + " of formal parameter " + formal.getKey() + " is incompatible with declared type " + formalType.getName());
