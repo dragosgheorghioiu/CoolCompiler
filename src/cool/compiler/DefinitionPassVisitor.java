@@ -203,6 +203,7 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(New neww) {
+        neww.scope = currentScope;
         return null;
     }
 
@@ -215,7 +216,11 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
     public Void visit(ExplicitDispatch dispatch) {
         dispatch.object.accept(this);
         if (dispatch.parent != null) {
-            dispatch.parent.accept(this);
+            if (dispatch.parent.token.getText().equals("SELF_TYPE")) {
+                SymbolTable.error(dispatch.ctx, dispatch.parent.token, "Type of static dispatch cannot be SELF_TYPE");
+            } else {
+                dispatch.parent.accept(this);
+            }
         }
         dispatch.parameters.forEach(p -> p.accept(this));
         dispatch.method_name.setScope(currentScope);
@@ -314,6 +319,9 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(Block block) {
+        for (var expr : block.expressions) {
+            expr.accept(this);
+        }
         return null;
     }
 }

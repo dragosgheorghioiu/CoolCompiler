@@ -111,10 +111,14 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
     @Override
     public ClassSymbol visit(Attribute attribute) {
         var id = attribute.name;
+        var type = attribute.type.token.getText();
         var symbol = (IdSymbol) id.getSymbol();
         var classSymbol = (ClassSymbol) id.getScope();
         var globalScope = SymbolTable.globals;
-        IdSymbol realType = (IdSymbol) globalScope.lookup(attribute.type.token.getText());
+        if (Objects.equals(type, "SELF_TYPE")) {
+            type = classSymbol.getName();
+        }
+        IdSymbol realType = (IdSymbol) globalScope.lookup(type);
         if (symbol == null) {
             return null;
         }
@@ -132,11 +136,6 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
                 return null;
             }
             classSymbolParent = parent.getType();
-        }
-
-        if (globalScope.lookup(attribute.type.token.getText()) == null) {
-            SymbolTable.error(attribute.ctx, attribute.type.token, "Class " + classSymbol.getName() + " has attribute " + id.token.getText() + " with undefined type " + attribute.type.token.getText());
-            return null;
         }
 
         if (attribute.value != null) {
@@ -244,13 +243,11 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
     public ClassSymbol visit(Id id) {
         var currentScope = id.getScope();
         if (id.token.getText().equals("self")) {
-            while (currentScope != null) {
-                if (currentScope instanceof ClassSymbol) {
-                    break;
-                }
+            while (currentScope.getParent().getParent() != null) {
                 currentScope = currentScope.getParent();
             }
-            return ((ClassSymbol) currentScope);
+            var selfClass = (ClassSymbol) currentScope;
+            return selfClass;
         }
         if (currentScope == null) {
             return null;
@@ -385,7 +382,12 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         var realId = (IdSymbol) SymbolTable.globals.lookup(id.getName());
         var realExpr = (IdSymbol) SymbolTable.globals.lookup(expr.getName());
 
-        if (!getInheritanceChain(realExpr).contains(realId.getName())) {
+        if (realExpr == null) {
+            var tempExpr = getSelfType(expr, assign.name.getScope());
+            realExpr = (IdSymbol) SymbolTable.globals.lookup(tempExpr.getName());
+        }
+
+        if (!checkValidType(realExpr.getType(), realId.getType().getName())) {
             SymbolTable.error(assign.ctx, assign.value.token, "Type " + expr.getName() + " of assigned expression is incompatible with declared type " + id.getName() + " of identifier " + assign.name.token.getText());
             return null;
         }
@@ -433,8 +435,6 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
         var method = (MethodSymbol) searchMethod;
         if (method.getFormals().size() != dispatchCast.parameters.size()) {
-            System.out.print(method.getFormals().size());
-            System.out.println(dispatchCast.parameters.size());
             SymbolTable.error(dispatchCast.ctx, dispatchCast.method_name.token, "Method " + dispatchCast.method_name.token.getText() + " of class " + realCaller.getName() + " is applied to wrong number of arguments");
             return null;
         }
@@ -442,9 +442,9 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         for (var formal : method.getFormals().entrySet()) {
             ClassSymbol formalType = ((IdSymbol) formal.getValue()).getType();
             ClassSymbol param = dispatchCast.parameters.get(i).accept(this);
-            if (!Objects.equals(formalType.getName(), param.getName())) {
+
+            if (!checkValidType(param, formalType.getName())) {
                 SymbolTable.error(dispatchCast.ctx, dispatchCast.parameters.get(i).token, "In call to method " + dispatchCast.method_name.token.getText() + " of class " + realCaller.getName() + ", actual type " + param.getName() + " of formal parameter " + formal.getKey() + " is incompatible with declared type " + formalType.getName());
-                continue;
             }
             i++;
         }
@@ -454,24 +454,29 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
     @Override
     public ClassSymbol visit(ExplicitDispatch dispatch) {
         var caller = dispatch.object.accept(this);
-//        System.out.println("Method: " + dispatch.method_name.token.getText());
         if (caller == null) {
             return null;
         }
         var callerScope = dispatch.method_name.getScope();
         caller = getSelfType(caller, callerScope);
-//        if (Objects.equals(caller.getName(), "SELF_TYPE")) {
-//            var callerScope = dispatch.method_name.getScope();
-//            while (callerScope.getParent().getParent() != null) {
-//                callerScope = callerScope.getParent();
-//            }
-//            ClassSymbol callerClass = (ClassSymbol) callerScope;
-//            caller = callerClass;
-//        }
+
 
         var realCaller = (IdSymbol) SymbolTable.globals.lookup(caller.getName());
         if (realCaller == null) {
             return null;
+        }
+
+        if (dispatch.parent != null && !Objects.equals(dispatch.parent.token.getText(), "SELF_TYPE")) {
+            if (SymbolTable.globals.lookup(dispatch.parent.token.getText()) == null) {
+                SymbolTable.error(dispatch.ctx, dispatch.parent.token, "Type " + dispatch.parent.token.getText() + " of static dispatch is undefined");
+                return null;
+            }
+            var inheritanceChain = getInheritanceChain(realCaller);
+            if (!inheritanceChain.contains(dispatch.parent.token.getText())) {
+                SymbolTable.error(dispatch.ctx, dispatch.parent.token, "Type " + dispatch.parent.token.getText() + " of static dispatch is not a superclass of type " + realCaller.getName());
+                return null;
+            }
+            realCaller = (IdSymbol) SymbolTable.globals.lookup(dispatch.parent.token.getText());
         }
 
         Symbol searchMethod = null;

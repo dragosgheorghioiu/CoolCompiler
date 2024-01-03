@@ -1,9 +1,16 @@
-"19-self_type.cl", line 2:9, Semantic error: Class A has attribute x with undefined type SELF_TYPE
+"19-self_type.cl", line 2:22, Semantic error: Type A of initialization expression of attribute x is incompatible with declared type SELF_TYPE
 "19-self_type.cl", line 5:11, Semantic error: Method h of class A has formal parameter y with illegal type SELF_TYPE
 "19-self_type.cl", line 7:21, Semantic error: Let variable z has undefined type SELF_TYPE
 "19-self_type.cl", line 10:35, Semantic error: new is used with undefined type SELF_TYPE
+"19-self_type.cl", line 11:18, Semantic error: Type Object of assigned expression is incompatible with declared type A of identifier x
 "19-self_type.cl", line 12:22, Semantic error: new is used with undefined type SELF_TYPE
 "19-self_type.cl", line 13:22, Semantic error: new is used with undefined type SELF_TYPE
 "19-self_type.cl", line 6:9, Semantic error: Type Int of the body of method h is incompatible with declared return type SELF_TYPE
 "19-self_type.cl", line 19:24, Semantic error: Type A of the body of method f1 is incompatible with declared return type SELF_TYPE
+"19-self_type.cl", line 35:19, Semantic error: Undefined method g in class A
+"19-self_type.cl", line 44:24, Semantic error: Undefined method g in class A
+"19-self_type.cl", line 47:21, Semantic error: Undefined method g in class A
+"19-self_type.cl", line 50:17, Semantic error: Undefined identifier x
+"19-self_type.cl", line 51:17, Semantic error: Undefined identifier x
+"19-self_type.cl", line 52:17, Semantic error: Undefined identifier x
 Compilation halted

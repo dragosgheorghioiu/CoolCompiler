@@ -290,6 +290,7 @@ class BoolType extends Expression {
 }
 
 class New extends Expression {
+    Scope scope;
     Type name;
     New(Token token, Type type, CoolParser.NewContext ctx) {
         super(token);
