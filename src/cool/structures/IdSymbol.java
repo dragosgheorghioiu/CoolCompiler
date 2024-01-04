@@ -10,7 +10,7 @@ public class IdSymbol extends FeatureSymbol {
 
     public IdSymbol(IdSymbol id) {
         this(id.getName());
-        this.type = id.getType();
+        this.type = new ClassSymbol(id.getType());
     }
 
     public void setType(ClassSymbol classs) {
@@ -25,5 +25,11 @@ public class IdSymbol extends FeatureSymbol {
     }
     public boolean isSelfType() {
         return isSelfType;
+    }
+
+    public String getNameOrSelf() {
+        if (isSelfType)
+            return "SELF_TYPE";
+        return getName();
     }
 }

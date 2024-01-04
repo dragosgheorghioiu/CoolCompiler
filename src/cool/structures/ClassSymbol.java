@@ -14,6 +14,13 @@ public class ClassSymbol extends IdSymbol implements Scope {
         this.parent = parent;
     }
 
+    public ClassSymbol(ClassSymbol classs) {
+        this(classs.getParent(), classs.getName());
+        this.parentClass = classs.getParentClass();
+        this.attributeSymbols = classs.attributeSymbols;
+        this.methodSymbols = classs.methodSymbols;
+    }
+
     @Override
     public boolean add(Symbol sym) {
         if (sym instanceof IdSymbol) {

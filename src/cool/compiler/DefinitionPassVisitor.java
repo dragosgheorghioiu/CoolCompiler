@@ -66,7 +66,6 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
     public Void visit(Attribute attribute) {
         var id = attribute.name;
         var symbol = new IdSymbol(id.token.getText());
-
         symbol.setType(new ClassSymbol(currentScope, attribute.type.token.getText()));
         if (!currentScope.add(symbol)) {
             SymbolTable.error(id.ctx, id.token, "Class " + currentScope + " redefines attribute " + id.token.getText());
