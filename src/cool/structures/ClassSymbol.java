@@ -8,7 +8,6 @@ public class ClassSymbol extends IdSymbol implements Scope {
     Map<String, MethodSymbol> methodSymbols = new LinkedHashMap<>();
     protected Scope parent;
     protected String parentClass;
-    private boolean isSelfType = false;
 
     public ClassSymbol(Scope parent, String name) {
         super(name);
@@ -87,10 +86,5 @@ public class ClassSymbol extends IdSymbol implements Scope {
         }
         return features;
     }
-    public void switchToSelfType() {
-        isSelfType = true;
-    }
-    public boolean isSelfType() {
-        return isSelfType;
-    }
+
 }

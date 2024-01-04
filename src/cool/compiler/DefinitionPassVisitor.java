@@ -236,6 +236,7 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(If iff) {
+        iff.scope = currentScope;
         currentScope = new MethodSymbol(currentScope, "if");
         iff.condition.accept(this);
         iff.then.accept(this);

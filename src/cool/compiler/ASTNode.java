@@ -355,6 +355,7 @@ class If extends Expression {
     Expression condition;
     Expression then;
     Expression elsee;
+    Scope scope;
     If(Token token, Expression condition, Expression then, Expression elsee, CoolParser.IfContext ctx) {
         super(token);
         this.condition = condition;
