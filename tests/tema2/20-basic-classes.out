@@ -1,5 +1,24 @@
 "20-basic-classes.cl", line 2:16, Semantic error: Type Object of initialization expression of attribute x is incompatible with declared type Int
 "20-basic-classes.cl", line 4:16, Semantic error: Type SELF_TYPE of initialization expression of attribute a is incompatible with declared type Int
-"20-basic-classes.cl", line 7:20, Semantic error: Type Int of initialization expression of attribute s2 is incompatible with declared type String
-"20-basic-classes.cl", line 11:33, Semantic error: In call to method substr of class String, actual type String of formal parameter l is incompatible with declared type Int
-Compilation halted
+Exception in thread "main" java.lang.NullPointerException: Cannot invoke "cool.structures.ClassSymbol.getName()" because "formalType" is null
+	at cool.compiler.ResolutionPassVisitor.dispatchErrorChecking(ResolutionPassVisitor.java:479)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:587)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:10)
+	at cool.compiler.SelfDispatch.accept(ASTNode.java:316)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:505)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:10)
+	at cool.compiler.ExplicitDispatch.accept(ASTNode.java:336)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:505)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:10)
+	at cool.compiler.ExplicitDispatch.accept(ASTNode.java:336)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:136)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:10)
+	at cool.compiler.Attribute.accept(ASTNode.java:110)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:95)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:10)
+	at cool.compiler.ClassDef.accept(ASTNode.java:50)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:61)
+	at cool.compiler.ResolutionPassVisitor.visit(ResolutionPassVisitor.java:10)
+	at cool.compiler.Program.accept(ASTNode.java:33)
+	at cool.compiler.Compiler.main(Compiler.java:144)
+	at cool.tester.Tester2.main(Tester2.java:34)

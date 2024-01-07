@@ -1,6 +1,8 @@
 package cool.structures;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ClassSymbol extends IdSymbol implements Scope {
@@ -9,9 +11,21 @@ public class ClassSymbol extends IdSymbol implements Scope {
     protected Scope parent;
     protected String parentClass;
 
+    List<ClassSymbol> inheritanceBranch = new ArrayList<>();
+
     public ClassSymbol(Scope parent, String name) {
         super(name);
         this.parent = parent;
+    }
+
+    public ArrayList<String> getInheritanceChain() {
+        ArrayList<String> inheritanceChain = new ArrayList<>();
+        var copy = this;
+        while (copy != null) {
+            inheritanceChain.add(copy.getName());
+            copy = copy.getParentClassSymbol();
+        }
+        return inheritanceChain;
     }
 
     @Override

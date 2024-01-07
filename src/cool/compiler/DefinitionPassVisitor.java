@@ -25,14 +25,14 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
         symbol.setType(new ClassSymbol(currentScope, id.token.getText()));
         currentScope = symbol.getType();
 
-        if (!currentScope.getParent().add(symbol))
-        {
-            SymbolTable.error(id.ctx, id.token, "Class " + id.token.getText() + " is redefined");
+        if (Objects.equals(id.token.getText(), "SELF_TYPE")) {
+            SymbolTable.error(id.ctx, id.token, "Class has illegal name SELF_TYPE");
             currentScope = currentScope.getParent();
             return null;
         }
-        if (Objects.equals(id.token.getText(), "SELF_TYPE")) {
-            SymbolTable.error(id.ctx, id.token, "Class has illegal name SELF_TYPE");
+        if (!currentScope.getParent().add(symbol))
+        {
+            SymbolTable.error(id.ctx, id.token, "Class " + id.token.getText() + " is redefined");
             currentScope = currentScope.getParent();
             return null;
         }
@@ -68,6 +68,7 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
         var symbol = new IdSymbol(id.token.getText());
 
         symbol.setType(new ClassSymbol(currentScope, attribute.type.token.getText()));
+//        System.out.println(symbol.getType());
         if (!currentScope.add(symbol)) {
             SymbolTable.error(id.ctx, id.token, "Class " + currentScope + " redefines attribute " + id.token.getText());
             return null;
@@ -231,6 +232,7 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(If iff) {
+        iff.scope = currentScope;
         currentScope = new MethodSymbol(currentScope, "if");
         iff.condition.accept(this);
         iff.then.accept(this);
@@ -314,6 +316,9 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(Block block) {
+        for (var expr : block.expressions) {
+            expr.accept(this);
+        }
         return null;
     }
 }

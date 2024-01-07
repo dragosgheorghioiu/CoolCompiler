@@ -23,6 +23,7 @@ public class SymbolTable {
         globals.add(new BoolBasicClass(globals));
         globals.add(new StringBasicClass(globals));
         globals.add(new IOBasicClass(globals));
+        globals.add(new IdSymbol("SELF_TYPE"));
     }
     
     /**
