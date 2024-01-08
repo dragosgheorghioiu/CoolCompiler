@@ -1,12 +1,35 @@
-class A inherits IO {
-    x : Int <- abort();
-    s : String <- type_name();
-    a : Int <- self.copy().copy().copy();
+class A {
+    f(b : B, c : C, x : Int) : Int {
+        {
+            c <- b.f(x, true);
+            b.f(x);
+            b.f(true, true);
+            c.f(x, true);
+            c.g();
+            c.f("abc", true);
 
-    s1 : String <- out_string("a").out_int(3).in_string();
-    s2 : String <- out_string("a").out_int(3).in_int();
+            c@SELF_TYPE.f(x, true);
+            c@Y.f(x, true);
+            c@A.f(x, true);
+            c@B.f(x, true);
+            c@Z.f(x, true);
 
-    l1 : Int <- s1.length();
-    s3 : String <- s1.concat(s2);
-    s4 : String <- s1.substr(x, s3);
+            self.f(b, c, x);
+            self.f(c, c, x);
+            self.f(c, b, x);
+
+            f(b, c, x);
+            f(c, c, x);
+            c <- f(c, b, x);
+        }
+    };
+};
+
+class Z {};
+
+class B inherits Z {
+    f(x : Int, y : Bool) : Int { 0 };
+};
+
+class C inherits B {
 };

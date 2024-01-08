@@ -11,21 +11,9 @@ public class ClassSymbol extends IdSymbol implements Scope {
     protected Scope parent;
     protected String parentClass;
 
-    List<ClassSymbol> inheritanceBranch = new ArrayList<>();
-
     public ClassSymbol(Scope parent, String name) {
         super(name);
         this.parent = parent;
-    }
-
-    public ArrayList<String> getInheritanceChain() {
-        ArrayList<String> inheritanceChain = new ArrayList<>();
-        var copy = this;
-        while (copy != null) {
-            inheritanceChain.add(copy.getName());
-            copy = copy.getParentClassSymbol();
-        }
-        return inheritanceChain;
     }
 
     @Override
@@ -57,16 +45,24 @@ public class ClassSymbol extends IdSymbol implements Scope {
         if (sym != null)
             return sym;
 
-        var symMethod = methodSymbols.get(s);
-
-        if (symMethod != null)
-            return symMethod;
-
         if (parent != null)
             return parent.lookup(s);
 
         return null;
     }
+
+    public MethodSymbol lookupMethod(String s) {
+        var symMethod = methodSymbols.get(s);
+
+        if (symMethod != null)
+            return symMethod;
+
+        if (parent != null && parent instanceof ClassSymbol)
+            return ((ClassSymbol) parent).lookupMethod(s);
+
+        return null;
+    }
+
 
     @Override
     public Scope getParent() {
@@ -99,12 +95,5 @@ public class ClassSymbol extends IdSymbol implements Scope {
             features.put(entry.getKey(), entry.getValue());
         }
         return features;
-    }
-
-    public Map<String, IdSymbol> getAttributeSymbols() {
-        return attributeSymbols;
-    }
-    public Map<String, MethodSymbol> getMethodSymbols() {
-        return methodSymbols;
     }
 }

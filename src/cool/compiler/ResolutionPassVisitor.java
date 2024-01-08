@@ -45,16 +45,6 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         return true;
     }
 
-    protected ClassSymbol getSelfType(ClassSymbol caller, Scope callerScope) {
-        if (Objects.equals(caller.getName(), "SELF_TYPE")) {
-            while (callerScope.getParent().getParent() != null) {
-                callerScope = callerScope.getParent();
-            }
-            ClassSymbol callerClass = (ClassSymbol) callerScope;
-            caller = callerClass;
-        }
-        return caller;
-    }
     @Override
     public ClassSymbol visit(Program program) {
         for (var classs : program.classes) {
@@ -175,7 +165,7 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
         var parent = classSymbol.getParentClassSymbol();
         while (parent != null) {
-            var parentMethod = (MethodSymbol) parent.lookup(id.token.getText());
+            var parentMethod = parent.lookupMethod(id.token.getText());
             if (parentMethod == null) {
                 parent = parent.getParentClassSymbol();
                 continue;
@@ -483,8 +473,6 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
                         return new ClassSymbol(null, "SELF_TYPE");
                     return realCaller.getType();
                 }
-                    if (callerIsSelf)
-                        return new ClassSymbol(null, "SELF_TYPE");
                 return method.getReturnType();
             }
             i++;
@@ -493,9 +481,7 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
             if (callerIsSelf)
                 return new ClassSymbol(null, "SELF_TYPE");
             return realCaller.getType();
-        }
-        if (callerIsSelf)
-            return new ClassSymbol(null, "SELF_TYPE");
+        };
         return method.getReturnType();
     }
 
@@ -536,7 +522,7 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
                 return null;
             }
 
-            var searchMethod = parentSymbol.getType().lookup(dispatch.method_name.token.getText());
+            var searchMethod = parentSymbol.getType().lookupMethod(dispatch.method_name.token.getText());
             if (searchMethod == null) {
                 SymbolTable.error(dispatch.ctx, dispatch.method_name.token, "Undefined method " + dispatch.method_name.token.getText() + " in class " + parentSymbol.getName());
                 return null;
@@ -546,7 +532,7 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         Symbol searchMethod = null;
         var parentCaller = realCaller.getType();
         while (parentCaller != null) {
-            searchMethod = parentCaller.lookup(dispatch.method_name.token.getText());
+            searchMethod = parentCaller.lookupMethod(dispatch.method_name.token.getText());
             if (searchMethod != null) {
                 break;
             }
@@ -567,11 +553,11 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
         while (caller.getParent().getParent() != null) {
             caller = caller.getParent();
         }
-        ClassSymbol callerClass = (ClassSymbol) caller;
+        var callerClass = (IdSymbol) SymbolTable.globals.lookup(caller.toString());
         Symbol searchMethod = null;
-        var parentCaller = callerClass;
+        var parentCaller = callerClass.getType();
         while (parentCaller != null) {
-            searchMethod = parentCaller.lookup(dispatch.method_name.token.getText());
+            searchMethod = parentCaller.lookupMethod(dispatch.method_name.token.getText());
             if (searchMethod != null) {
                 break;
             }
@@ -584,7 +570,7 @@ public class ResolutionPassVisitor implements  ASTVisitor<ClassSymbol>{
 
         var dispatchCast = new DispatchCast(dispatch, dispatch, dispatch.method_name, dispatch.parameters, dispatch.ctx);
 
-        return dispatchErrorChecking(searchMethod, dispatchCast, callerClass, false);
+        return dispatchErrorChecking(searchMethod, dispatchCast, callerClass, true);
     }
 
     @Override
