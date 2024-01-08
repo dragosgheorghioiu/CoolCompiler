@@ -12,7 +12,14 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
         for (var classs : prog.classes) {
             classs.accept(this);
         }
-
+        if (SymbolTable.globals.lookup("Main") == null) {
+            SymbolTable.error(prog.classes.get(0).ctx, prog.classes.get(0).token, "No method main in class Main");
+            return null;
+        }
+        if (((IdSymbol) SymbolTable.globals.lookup("Main")).getType().lookupMethod("main") == null) {
+            SymbolTable.error(prog.classes.get(mainClass).ctx, prog.classes.get(mainClass).token, "No method main in class Main");
+            return null;
+        }
         return null;
     }
 
